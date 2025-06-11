@@ -4,13 +4,13 @@ from google.oauth2.service_account import Credentials
 import pandas as pd
 
 # Google Sheets Setup
-SERVICE_ACCOUNT_FILE = 'darktrace-project/credentials.json'
+SERVICE_ACCOUNT_FILE = 'credentials.json'  # 🔧 FIXED path for cloud
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
 credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 gc = gspread.authorize(credentials)
 
 # Load sheet
-sheet = gc.open("USB_Threat_Logs").sheet1  # Your sheet name
+sheet = gc.open("USB_Threat_Logs").sheet1  # Make sure this name is correct
 data = sheet.get_all_records()
 df = pd.DataFrame(data)
 

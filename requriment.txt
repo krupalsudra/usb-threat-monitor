@@ -1,0 +1,9 @@
+streamlit
+gspread
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+oauth2client
+requests
+pythoncom; platform_system=="Windows"
+pywin32; platform_system=="Windows"

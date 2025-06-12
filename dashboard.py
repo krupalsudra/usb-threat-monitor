@@ -62,8 +62,13 @@ malware_keywords = [
     'trojan', 'spyware'
 ]
 
+# Add Suspicious column
 df['Suspicious'] = df['Message'].str.contains('|'.join(malware_keywords), case=False, na=False)
 suspicious_df = df[df['Suspicious']]
+
+# 🧪 Debugging section to test detection
+st.write("🔍 Suspicious Keyword Detection Debug")
+st.dataframe(df[['Message', 'Suspicious']], use_container_width=True)
 
 if not suspicious_df.empty:
     st.error("🚨 ALERT: Suspicious USB Activity Detected!")
@@ -89,6 +94,12 @@ if not suspicious_df.empty:
     """, unsafe_allow_html=True)
 else:
     st.success("✅ No suspicious USB activity detected.")
+    st.info("Debug: No suspicious activity found in suspicious_df.")
+
+# --------------- MANUAL ALERT TEST BUTTON -------------------
+if st.button("🚨 Send Manual Test Alert"):
+    st.warning("🚨 TEST ALERT TRIGGERED MANUALLY")
+    send_pushbullet_alert("🚨 Test Alert", "Manual test alert sent from Streamlit.")
 
 # --------------- SEARCH / FILTER -------------------
 with st.expander("🔍 Filter logs by keyword"):

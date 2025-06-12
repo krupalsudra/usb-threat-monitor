@@ -4,7 +4,7 @@ from pushbullet import Pushbullet
 import os
 
 # --------------- PUSHBULLET CONFIG -------------------
-PUSHBULLET_TOKEN = "o.aXiYN8UVCcVKTcaklBTJ1YlIMrVhyibS"
+PUSHBULLET_TOKEN = "o.aXiYN8UVCcVKTcaklBTJ1YlIMrVhyibS"  # Your Pushbullet API token
 pb = Pushbullet(PUSHBULLET_TOKEN)
 
 def send_pushbullet_alert(title, message):
@@ -14,7 +14,7 @@ def send_pushbullet_alert(title, message):
     except Exception as e:
         print("❌ Failed to send Pushbullet alert:", e)
 
-# --------------- PAGE SETUP -------------------
+# --------------- STREAMLIT SETUP -------------------
 st.set_page_config(
     page_title="USB Threat Monitor",
     page_icon="🔐",
@@ -42,16 +42,17 @@ except Exception as e:
     st.error("Failed to load USB logs. Please check the sheet link or your internet connection.")
     st.stop()
 
-# Ensure required columns
+# Ensure required columns are present
 required_cols = ['Timestamp', 'Device Name', 'Message']
 if not all(col in df.columns for col in required_cols):
     st.error("The data is missing required columns: Timestamp, Device Name, or Message.")
     st.stop()
 
+# Sort by timestamp
 df['Timestamp'] = pd.to_datetime(df['Timestamp'], errors='coerce')
 df = df.sort_values(by='Timestamp', ascending=False)
 
-# --------------- DISPLAY LOGS -------------------
+# --------------- DISPLAY ALL LOGS -------------------
 st.subheader("🧾 USB Device Activity Log")
 st.dataframe(df, use_container_width=True)
 
@@ -65,19 +66,31 @@ malware_keywords = [
 df['Suspicious'] = df['Message'].str.contains('|'.join(malware_keywords), case=False, na=False)
 suspicious_df = df[df['Suspicious']]
 
+# --- SESSION STATE SETUP ---
+if 'last_alert' not in st.session_state:
+    st.session_state['last_alert'] = ""
+
+# --- ALERT SECTION ---
 if not suspicious_df.empty:
     st.error("🚨 ALERT: Suspicious USB Activity Detected!")
     st.dataframe(suspicious_df, use_container_width=True)
 
     latest_alert = suspicious_df.iloc[0]
-    title = "🚨 USB Threat Detected"
-    message = f"Suspicious file detected: {latest_alert['Message']} on {latest_alert['Device Name']}"
-    send_pushbullet_alert(title, message)
+    alert_message = f"{latest_alert['Message']} on {latest_alert['Device Name']}"
 
-    # 🔊 Play sound from static folder (browser-compatible)
-    audio_file_path = "static/alert.mp3"
-    st.audio(audio_file_path, format="audio/mp3")
+    if st.session_state['last_alert'] != alert_message:
+        # Send alert only once for the same message
+        send_pushbullet_alert("🚨 USB Threat Detected", alert_message)
+        st.session_state['last_alert'] = alert_message
 
+        # 🎵 Play audio if file exists
+        audio_file_path = "static/alert.mp3"
+        if os.path.exists(audio_file_path):
+            st.audio(audio_file_path, format="audio/mp3")
+        else:
+            st.warning("Audio file not found: static/alert.mp3")
+    else:
+        st.info("Threat already notified earlier.")
 else:
     st.success("✅ No suspicious USB activity detected.")
 

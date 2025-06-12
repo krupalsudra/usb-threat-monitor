@@ -6,3 +6,4 @@ google-auth-httplib2
 pandas
 pushbullet.py
 playsound
+pyusb

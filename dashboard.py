@@ -10,7 +10,7 @@ credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes
 gc = gspread.authorize(credentials)
 
 # Load sheet
-sheet = gc.open("USB_Threat_Logs").sheet1  # Make sure this name is correct
+sheet = gc.open("USB Threat Logs").sheet1  # Make sure this name is correct
 data = sheet.get_all_records()
 df = pd.DataFrame(data)
 

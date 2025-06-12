@@ -1,32 +1,26 @@
 import streamlit as st
-import gspread
-from google.oauth2.service_account import Credentials
 import pandas as pd
 
-# Google Sheets Setup
-SERVICE_ACCOUNT_FILE = 'credentials.json'  # 🔧 FIXED path for cloud
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-credentials = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-gc = gspread.authorize(credentials)
+# 🔗 Public Google Sheet as CSV
+sheet_id = "1mBuhti3Z9cukL3lhTs0kx63qcJ3Zqh0nGS_McB28OXI"
+sheet_name = "Sheet1"  # Update if your sheet has a different name
+csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
 
-# Load sheet
-sheet = gc.open("USB Threat Logs").sheet1  # Make sure this name is correct
-data = sheet.get_all_records()
-df = pd.DataFrame(data)
+# Load data
+df = pd.read_csv(csv_url)
 
-# Streamlit App
+# Streamlit UI
 st.set_page_config(page_title="USB Threat Monitor", layout="wide")
 st.title("🔐 USB Threat Monitoring Dashboard")
-
 st.markdown("This dashboard displays real-time logs of USB devices and potential threats detected on local machines.")
 
-# Display log data
+# Show data
 st.dataframe(df)
 
-# Optional filter
+# Filter option
 with st.expander("🔍 Filter by keyword"):
     keyword = st.text_input("Enter keyword to search (e.g., '.exe', 'D:\\', etc.)")
     if keyword:
-        st.dataframe(df[df['Message'].str.contains(keyword, case=False)])
+        st.dataframe(df[df['Message'].str.contains(keyword, case=False, na=False)])
 
 st.success("Dashboard Loaded Successfully ✅")

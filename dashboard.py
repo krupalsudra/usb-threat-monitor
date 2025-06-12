@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 from pushbullet import Pushbullet
+from playsound import playsound  # for desktop audio playback
+import os
 
 # --------------- PUSHBULLET CONFIG -------------------
 PUSHBULLET_TOKEN = "o.aXiYN8UVCcVKTcaklBTJ1YlIMrVhyibS"  # Your Pushbullet API token
@@ -13,6 +15,11 @@ def send_pushbullet_alert(title, message):
     except Exception as e:
         print("❌ Failed to send Pushbullet alert:", e)
 
+# --------------- SOUND FILE PATH -------------------
+# Adjust this path if sound.wav is placed somewhere else
+desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
+sound_path = os.path.join(desktop_path, "sound.wav")
+
 # --------------- PAGE SETUP -------------------
 st.set_page_config(
     page_title="USB Threat Monitor",
@@ -21,7 +28,7 @@ st.set_page_config(
 )
 
 st.title("🔐 USB Threat Monitoring Dashboard")
-st.markdown("Monitor real-time logs of USB activity and detect any suspicious or malware-like behavior on USB devices.")
+st.markdown("This dashboard displays real-time logs of USB devices and potential threats detected on local machines.")
 
 # --------------- SIDEBAR -------------------
 with st.sidebar:
@@ -62,13 +69,8 @@ malware_keywords = [
     'trojan', 'spyware'
 ]
 
-# Add Suspicious column
 df['Suspicious'] = df['Message'].str.contains('|'.join(malware_keywords), case=False, na=False)
 suspicious_df = df[df['Suspicious']]
-
-# 🧪 Debugging section to test detection
-st.write("🔍 Suspicious Keyword Detection Debug")
-st.dataframe(df[['Message', 'Suspicious']], use_container_width=True)
 
 if not suspicious_df.empty:
     st.error("🚨 ALERT: Suspicious USB Activity Detected!")
@@ -80,7 +82,7 @@ if not suspicious_df.empty:
     message = f"Suspicious file detected: {latest_alert['Message']} on {latest_alert['Device Name']}"
     send_pushbullet_alert(title, message)
 
-    # 🔊 Browser beep
+    # 🔊 Browser beep (fallback if sound.wav doesn't play)
     st.markdown("""
     <script>
         var ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -92,14 +94,14 @@ if not suspicious_df.empty:
         oscillator.stop(ctx.currentTime + 0.4);
     </script>
     """, unsafe_allow_html=True)
+
+    # 🔉 Desktop sound.wav playback
+    if os.path.exists(sound_path):
+        playsound(sound_path)
+    else:
+        st.warning(f"sound.wav file not found on Desktop at: {sound_path}")
 else:
     st.success("✅ No suspicious USB activity detected.")
-    st.info("Debug: No suspicious activity found in suspicious_df.")
-
-# --------------- MANUAL ALERT TEST BUTTON -------------------
-if st.button("🚨 Send Manual Test Alert"):
-    st.warning("🚨 TEST ALERT TRIGGERED MANUALLY")
-    send_pushbullet_alert("🚨 Test Alert", "Manual test alert sent from Streamlit.")
 
 # --------------- SEARCH / FILTER -------------------
 with st.expander("🔍 Filter logs by keyword"):

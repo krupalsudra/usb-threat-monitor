@@ -1,11 +1,10 @@
 import streamlit as st
 import pandas as pd
 from pushbullet import Pushbullet
-from playsound import playsound  # for desktop audio playback
 import os
 
 # --------------- PUSHBULLET CONFIG -------------------
-PUSHBULLET_TOKEN = "o.aXiYN8UVCcVKTcaklBTJ1YlIMrVhyibS"  # Your Pushbullet API token
+PUSHBULLET_TOKEN = "o.aXiYN8UVCcVKTcaklBTJ1YlIMrVhyibS"
 pb = Pushbullet(PUSHBULLET_TOKEN)
 
 def send_pushbullet_alert(title, message):
@@ -14,11 +13,6 @@ def send_pushbullet_alert(title, message):
         print("✅ Pushbullet alert sent.")
     except Exception as e:
         print("❌ Failed to send Pushbullet alert:", e)
-
-# --------------- SOUND FILE PATH -------------------
-# Adjust this path if sound.wav is placed somewhere else
-desktop_path = os.path.join(os.path.expanduser("~"), "Desktop")
-sound_path = os.path.join(desktop_path, "sound.wav")
 
 # --------------- PAGE SETUP -------------------
 st.set_page_config(
@@ -48,17 +42,16 @@ except Exception as e:
     st.error("Failed to load USB logs. Please check the sheet link or your internet connection.")
     st.stop()
 
-# Ensure required columns are present
+# Ensure required columns
 required_cols = ['Timestamp', 'Device Name', 'Message']
 if not all(col in df.columns for col in required_cols):
     st.error("The data is missing required columns: Timestamp, Device Name, or Message.")
     st.stop()
 
-# Sort by timestamp
 df['Timestamp'] = pd.to_datetime(df['Timestamp'], errors='coerce')
 df = df.sort_values(by='Timestamp', ascending=False)
 
-# --------------- DISPLAY ALL LOGS -------------------
+# --------------- DISPLAY LOGS -------------------
 st.subheader("🧾 USB Device Activity Log")
 st.dataframe(df, use_container_width=True)
 
@@ -76,30 +69,15 @@ if not suspicious_df.empty:
     st.error("🚨 ALERT: Suspicious USB Activity Detected!")
     st.dataframe(suspicious_df, use_container_width=True)
 
-    # 🔔 Send Pushbullet alert
     latest_alert = suspicious_df.iloc[0]
     title = "🚨 USB Threat Detected"
     message = f"Suspicious file detected: {latest_alert['Message']} on {latest_alert['Device Name']}"
     send_pushbullet_alert(title, message)
 
-    # 🔊 Browser beep (fallback if sound.wav doesn't play)
-    st.markdown("""
-    <script>
-        var ctx = new (window.AudioContext || window.webkitAudioContext)();
-        var oscillator = ctx.createOscillator();
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(1000, ctx.currentTime);
-        oscillator.connect(ctx.destination);
-        oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.4);
-    </script>
-    """, unsafe_allow_html=True)
+    # 🔊 Play sound from static folder (browser-compatible)
+    audio_file_path = "static/alert.mp3"
+    st.audio(audio_file_path, format="audio/mp3")
 
-    # 🔉 Desktop sound.wav playback
-    if os.path.exists(sound_path):
-        playsound(sound_path)
-    else:
-        st.warning(f"sound.wav file not found on Desktop at: {sound_path}")
 else:
     st.success("✅ No suspicious USB activity detected.")
 

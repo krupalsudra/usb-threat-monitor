@@ -4,7 +4,7 @@ from pushbullet import Pushbullet
 import os
 
 # --------------- PUSHBULLET CONFIG -------------------
-PUSHBULLET_TOKEN = "o.aXiYN8UVCcVKTcaklBTJ1YlIMrVhyibS"  # Your Pushbullet API token
+PUSHBULLET_TOKEN = "o.aXiYN8UVCcVKTcaklBTJ1YlIMrVhyibS"  # Replace with your token
 pb = Pushbullet(PUSHBULLET_TOKEN)
 
 def send_pushbullet_alert(title, message):
@@ -14,7 +14,7 @@ def send_pushbullet_alert(title, message):
     except Exception as e:
         print("❌ Failed to send Pushbullet alert:", e)
 
-# --------------- STREAMLIT SETUP -------------------
+# --------------- PAGE SETUP -------------------
 st.set_page_config(
     page_title="USB Threat Monitor",
     page_icon="🔐",
@@ -66,31 +66,35 @@ malware_keywords = [
 df['Suspicious'] = df['Message'].str.contains('|'.join(malware_keywords), case=False, na=False)
 suspicious_df = df[df['Suspicious']]
 
-# --- SESSION STATE SETUP ---
-if 'last_alert' not in st.session_state:
-    st.session_state['last_alert'] = ""
-
-# --- ALERT SECTION ---
 if not suspicious_df.empty:
     st.error("🚨 ALERT: Suspicious USB Activity Detected!")
     st.dataframe(suspicious_df, use_container_width=True)
 
+    # 🔔 Send Pushbullet alert
     latest_alert = suspicious_df.iloc[0]
-    alert_message = f"{latest_alert['Message']} on {latest_alert['Device Name']}"
+    title = "🚨 USB Threat Detected"
+    message = f"Suspicious file detected: {latest_alert['Message']} on {latest_alert['Device Name']}"
+    send_pushbullet_alert(title, message)
 
-    if st.session_state['last_alert'] != alert_message:
-        # Send alert only once for the same message
-        send_pushbullet_alert("🚨 USB Threat Detected", alert_message)
-        st.session_state['last_alert'] = alert_message
+    # 🔊 Browser beep (fallback JS)
+    st.markdown("""
+    <script>
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        var oscillator = ctx.createOscillator();
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(1000, ctx.currentTime);
+        oscillator.connect(ctx.destination);
+        oscillator.start();
+        oscillator.stop(ctx.currentTime + 0.4);
+    </script>
+    """, unsafe_allow_html=True)
 
-        # 🎵 Play audio if file exists
-        audio_file_path = "static/alert.mp3"
-        if os.path.exists(audio_file_path):
-            st.audio(audio_file_path, format="audio/mp3")
-        else:
-            st.warning("Audio file not found: static/alert.mp3")
+    # 🔉 Play alert.wav from static folder
+    audio_file_path = "static/alert.wav"
+    if os.path.exists(audio_file_path):
+        st.audio(audio_file_path, format="audio/wav")
     else:
-        st.info("Threat already notified earlier.")
+        st.warning(f"Audio file not found: {audio_file_path}")
 else:
     st.success("✅ No suspicious USB activity detected.")
 

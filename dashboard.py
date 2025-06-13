@@ -4,7 +4,7 @@ from pushbullet import Pushbullet
 import os
 
 # --------------- PUSHBULLET CONFIG -------------------
-PUSHBULLET_TOKEN = "o.aXiYN8UVCcVKTcaklBTJ1YlIMrVhyibS"  # Replace with your token
+PUSHBULLET_TOKEN = "o.aXiYN8UVCcVKTcaklBTJ1YlIMrVhyibS"  # Replace with your Pushbullet API token
 pb = Pushbullet(PUSHBULLET_TOKEN)
 
 def send_pushbullet_alert(title, message):
@@ -37,9 +37,9 @@ csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:cs
 
 try:
     df = pd.read_csv(csv_url)
-    st.success("USB logs successfully loaded.")
+    st.success("✅ USB logs successfully loaded.")
 except Exception as e:
-    st.error("Failed to load USB logs. Please check the sheet link or your internet connection.")
+    st.error("❌ Failed to load USB logs. Please check the sheet link or your internet connection.")
     st.stop()
 
 # Ensure required columns are present
@@ -70,31 +70,25 @@ if not suspicious_df.empty:
     st.error("🚨 ALERT: Suspicious USB Activity Detected!")
     st.dataframe(suspicious_df, use_container_width=True)
 
-    # 🔔 Send Pushbullet alert
+    # Send Pushbullet alert
     latest_alert = suspicious_df.iloc[0]
     title = "🚨 USB Threat Detected"
     message = f"Suspicious file detected: {latest_alert['Message']} on {latest_alert['Device Name']}"
     send_pushbullet_alert(title, message)
 
-    # 🔊 Browser beep (fallback JS)
+    # ✅ JavaScript beep (browser only)
     st.markdown("""
     <script>
-        var ctx = new (window.AudioContext || window.webkitAudioContext)();
-        var oscillator = ctx.createOscillator();
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(1000, ctx.currentTime);
-        oscillator.connect(ctx.destination);
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        oscillator.type = "square";
+        oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
+        oscillator.connect(audioCtx.destination);
         oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.4);
+        oscillator.stop(audioCtx.currentTime + 0.3);
     </script>
     """, unsafe_allow_html=True)
 
-    # 🔉 Play alert.wav from static folder
-    audio_file_path = "static/alert.wav"
-    if os.path.exists(audio_file_path):
-        st.audio(audio_file_path, format="audio/wav")
-    else:
-        st.warning(f"Audio file not found: {audio_file_path}")
 else:
     st.success("✅ No suspicious USB activity detected.")
 
